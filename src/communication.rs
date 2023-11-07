@@ -1,4 +1,4 @@
-pub trait Communication {
+pub trait Connectable {
     /// Type that stores communication configuration
     type CommConfig;
 
@@ -12,10 +12,12 @@ pub trait Communication {
 
     /// Check if the device is connected
     fn connected(&mut self) -> bool;
+}
 
+pub trait Communication: Send + Sync {
     /// Send data to a device
-    fn send(&mut self, data: &[u8]) -> Result<(), std::io::Error>;
+    fn send(&self, data: &[u8]) -> Result<(), std::io::Error>;
 
     /// Receive data from a device
-    fn recv(&mut self) -> Result<Option<Vec<u8>>, std::io::Error>;
+    fn recv(&self) -> Result<Option<Vec<u8>>, std::io::Error>;
 }
