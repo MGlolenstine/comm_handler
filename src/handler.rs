@@ -1,6 +1,6 @@
 use crate::framed_handler::FramedHandler;
+use crate::traits::{CommunicationBuilder, PacketParser};
 use crate::Result;
-use crate::{communication::CommunicationBuilder, packet_parser::PacketParser};
 use flume::{Receiver, Sender};
 
 /// Packet parser that forwards packets

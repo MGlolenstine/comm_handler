@@ -1,7 +1,7 @@
 use std::time::Duration;
 
+use crate::traits::{CommunicationBuilder, PacketParser};
 use crate::Result;
-use crate::{communication::CommunicationBuilder, packet_parser::PacketParser};
 use flume::{Receiver, Sender};
 use log::error;
 

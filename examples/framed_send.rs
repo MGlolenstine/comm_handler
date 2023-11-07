@@ -1,10 +1,7 @@
 use std::time::Duration;
 
 /// To run this example, you will have to connect a serial adapter and short TX and RX pins.
-use comm_handler::{
-    adapters::uart::UartAdapterConfiguration, framed_handler::FramedHandler,
-    packet_parser::PacketParser,
-};
+use comm_handler::{adapters::uart::UartAdapterConfiguration, traits::PacketParser, FramedHandler};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Data {

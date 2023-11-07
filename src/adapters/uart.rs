@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use log::trace;
 use serial2::{CharSize, FlowControl, IntoSettings, Parity, SerialPort, StopBits};
 
-use crate::communication::{CloneableCommunication, Communication, CommunicationBuilder};
+use crate::traits::{CloneableCommunication, Communication, CommunicationBuilder};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UartAdapterConfiguration {
