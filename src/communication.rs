@@ -1,3 +1,8 @@
+pub trait CommunicationBuilder {
+    /// Builds a communication out of
+    fn build(&self) -> Result<Box<dyn Communication>, std::io::Error>;
+}
+
 pub trait Connectable {
     /// Type that stores communication configuration
     type CommConfig;

@@ -3,7 +3,7 @@ use std::time::Duration;
 use log::trace;
 use serial2::{CharSize, FlowControl, IntoSettings, Parity, SerialPort, StopBits};
 
-use crate::communication::Communication;
+use crate::communication::{Communication, CommunicationBuilder};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UartAdapterConfiguration {
@@ -41,22 +41,14 @@ impl IntoSettings for UartAdapterConfiguration {
     }
 }
 
-pub struct UartBuilder {
-    config: UartAdapterConfiguration,
-}
-
-impl UartBuilder {
-    pub fn new(config: UartAdapterConfiguration) -> Self {
-        Self { config }
-    }
-
-    pub fn build(self) -> Result<UartAdapter, std::io::Error> {
-        trace!("Connecting to SerialPort: {:#?}", self.config);
-        let read_timeout = self.config.read_timeout;
-        let mut port = SerialPort::open(self.config.port.clone(), self.config)?;
+impl CommunicationBuilder for UartAdapterConfiguration {
+    fn build(&self) -> Result<Box<dyn Communication>, std::io::Error> {
+        trace!("Connecting to SerialPort: {:#?}", self);
+        let read_timeout = self.read_timeout;
+        let mut port = SerialPort::open(self.port.clone(), self.clone())?;
         trace!("Successfully connected to the SerialPort");
         port.set_read_timeout(read_timeout)?;
-        Ok(UartAdapter { port: Some(port) })
+        Ok(Box::new(UartAdapter { port: Some(port) }))
     }
 }
 

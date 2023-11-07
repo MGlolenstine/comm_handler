@@ -1,9 +1,9 @@
 use std::{sync::Arc, time::Duration};
 
-use crate::communication::Communication;
+use crate::communication::CommunicationBuilder;
 use crate::Result;
 use flume::{Receiver, Sender};
-use log::{error, trace};
+use log::error;
 
 pub struct Handler {
     /// Adapter that is the heart of the communication
@@ -17,12 +17,12 @@ pub struct Handler {
 }
 
 impl Handler {
-    pub fn spawn(adapter: Box<dyn Communication>) -> Self {
+    pub fn spawn(adapter_configuration: &dyn CommunicationBuilder) -> Result<Self> {
         let (send_tx, send_rx) = flume::unbounded::<Vec<u8>>();
         let (receive_tx, receive_rx) = flume::unbounded::<Vec<u8>>();
         let (terminate_tx, terminate_rx) = flume::unbounded();
 
-        let adapter_arc = Arc::new(adapter);
+        let adapter_arc = Arc::new(adapter_configuration.build()?);
 
         let adapter = adapter_arc.clone();
         let terminate = terminate_rx.clone();
@@ -66,11 +66,11 @@ impl Handler {
             }
         });
 
-        Self {
+        Ok(Self {
             terminate_sender: terminate_tx,
             send_tx,
             receive_rx,
-        }
+        })
     }
 
     /// Terminate the ongoing connection

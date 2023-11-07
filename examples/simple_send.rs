@@ -1,8 +1,5 @@
 /// To run this example, you will have to connect a serial adapter and short TX and RX pins.
-use comm_handler::{
-    adapters::uart::{UartAdapterConfiguration, UartBuilder},
-    handler::Handler,
-};
+use comm_handler::{adapters::uart::UartAdapterConfiguration, handler::Handler};
 use log::trace;
 
 fn main() {
@@ -12,9 +9,7 @@ fn main() {
         ..Default::default()
     };
 
-    let uart = UartBuilder::new(config).build().unwrap();
-
-    let handler = Handler::spawn(Box::new(uart));
+    let handler = Handler::spawn(&config).unwrap();
 
     let sender = handler.get_sender();
     let receiver = handler.get_receiver();
