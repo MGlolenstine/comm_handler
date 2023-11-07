@@ -3,6 +3,10 @@ pub trait CommunicationBuilder {
     fn build(&self) -> Result<Box<dyn Communication>, std::io::Error>;
 }
 
+pub trait CloneableCommunication {
+    fn boxed_clone(&self) -> Box<dyn Communication>;
+}
+
 pub trait Connectable {
     /// Type that stores communication configuration
     type CommConfig;
@@ -19,10 +23,10 @@ pub trait Connectable {
     fn connected(&mut self) -> bool;
 }
 
-pub trait Communication: Send + Sync {
+pub trait Communication: CloneableCommunication + Send + Sync {
     /// Send data to a device
-    fn send(&self, data: &[u8]) -> Result<(), std::io::Error>;
+    fn send(&mut self, data: &[u8]) -> Result<(), std::io::Error>;
 
     /// Receive data from a device
-    fn recv(&self) -> Result<Option<Vec<u8>>, std::io::Error>;
+    fn recv(&mut self) -> Result<Option<Vec<u8>>, std::io::Error>;
 }

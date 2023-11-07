@@ -1,9 +1,9 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use log::trace;
 use serial2::{CharSize, FlowControl, IntoSettings, Parity, SerialPort, StopBits};
 
-use crate::communication::{Communication, CommunicationBuilder};
+use crate::communication::{CloneableCommunication, Communication, CommunicationBuilder};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UartAdapterConfiguration {
@@ -48,36 +48,35 @@ impl CommunicationBuilder for UartAdapterConfiguration {
         let mut port = SerialPort::open(self.port.clone(), self.clone())?;
         trace!("Successfully connected to the SerialPort");
         port.set_read_timeout(read_timeout)?;
-        Ok(Box::new(UartAdapter { port: Some(port) }))
+        Ok(Box::new(UartAdapter {
+            port: Arc::new(port),
+        }))
     }
 }
 
-#[derive(Default)]
+#[derive(Clone)]
 pub struct UartAdapter {
-    port: Option<serial2::SerialPort>,
+    port: Arc<serial2::SerialPort>,
 }
 
 impl Communication for UartAdapter {
-    fn send(&self, data: &[u8]) -> Result<(), std::io::Error> {
+    fn send(&mut self, data: &[u8]) -> Result<(), std::io::Error> {
         self.error_if_not_connected()?;
-        let port = self.port.as_ref().unwrap();
         trace!("Writing {:?} to UART.", data);
-        port.write_all(data)?;
+        self.port.write_all(data)?;
         trace!("Data written to UART.");
         Ok(())
     }
 
-    fn recv(&self) -> Result<Option<Vec<u8>>, std::io::Error> {
+    fn recv(&mut self) -> Result<Option<Vec<u8>>, std::io::Error> {
         self.error_if_not_connected()?;
-        let port = self.port.as_ref().unwrap();
-
         let mut buf = vec![];
 
         // Would default of 1024 fit in well?
         let mut data = vec![0u8; 1024];
 
         trace!("Reading");
-        while let Ok(a) = port.read(&mut data) {
+        while let Ok(a) = self.port.read(&mut data) {
             if a == 0 {
                 break;
             }
@@ -95,10 +94,8 @@ impl Communication for UartAdapter {
 
 impl UartAdapter {
     fn connected(&self) -> bool {
-        if let Some(port) = self.port.as_ref() {
-            if port.get_configuration().is_ok() {
-                return true;
-            }
+        if self.port.get_configuration().is_ok() {
+            return true;
         }
         false
     }
@@ -111,5 +108,11 @@ impl UartAdapter {
             ));
         }
         Ok(())
+    }
+}
+
+impl CloneableCommunication for UartAdapter {
+    fn boxed_clone(&self) -> Box<dyn Communication> {
+        Box::new(self.clone())
     }
 }
