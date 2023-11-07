@@ -11,7 +11,7 @@ impl PacketParser<Vec<u8>> for Passthrough {
         Passthrough
     }
 
-    fn clone(&self) -> Self {
+    fn clone_inner(&self) -> Self {
         Clone::clone(self)
     }
 

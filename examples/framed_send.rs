@@ -1,63 +1,54 @@
-use std::time::Duration;
+#![allow(clippy::disallowed_names)]
 
 /// To run this example, you will have to connect a serial adapter and short TX and RX pins.
 use comm_handler::{adapters::uart::UartAdapterConfiguration, traits::PacketParser, FramedHandler};
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Data {
-    Zero,
-    One,
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine,
+#[derive(Debug, PartialEq, Clone, Default)]
+pub struct Data {
+    foo: u32,
+    bar: String,
+    baz: f32,
 }
 
-#[derive(Clone)]
-pub struct ParseEnum;
-
-impl PacketParser<Data> for ParseEnum {
+impl PacketParser<Data> for Data {
     fn new() -> Self {
-        ParseEnum
+        Data::default()
     }
 
-    fn clone(&self) -> Self {
+    fn clone_inner(&self) -> Self {
         Clone::clone(self)
     }
 
     fn parse_from_bytes(&self, data: &[u8]) -> Data {
-        match data[0] {
-            0 => Data::Zero,
-            1 => Data::One,
-            2 => Data::Two,
-            3 => Data::Three,
-            4 => Data::Four,
-            5 => Data::Five,
-            6 => Data::Six,
-            7 => Data::Seven,
-            8 => Data::Eight,
-            9 => Data::Nine,
-            _ => Data::Zero,
-        }
+        // `foo` field in binary takes up 4 bytes
+        let foo: u32 = u32::from_le_bytes(data[0..4].try_into().unwrap());
+
+        // `bar` length field in binary takes up 4 bytes
+        let bar_length = u32::from_le_bytes(data[4..8].try_into().unwrap()) as usize;
+        // `bar` field in binary takes up `bar_length` bytes
+        let bar = String::from_utf8_lossy(&data[8..8 + bar_length]).to_string();
+
+        // `baz` field in binary takes up 4 bytes
+        let baz = f32::from_le_bytes(data[8 + bar_length..].try_into().unwrap());
+
+        Data { foo, bar, baz }
     }
 
     fn parse_to_bytes(&self, data: &Data) -> Vec<u8> {
-        vec![match data {
-            Data::Zero => 0,
-            Data::One => 1,
-            Data::Two => 2,
-            Data::Three => 3,
-            Data::Four => 4,
-            Data::Five => 5,
-            Data::Six => 6,
-            Data::Seven => 7,
-            Data::Eight => 8,
-            Data::Nine => 9,
-        }]
+        let mut ret = vec![];
+
+        // Add `foo` field to the output
+        ret.extend_from_slice(&data.foo.to_le_bytes());
+
+        // Add `bar` field to the output
+        // We need to know the length of the string
+        ret.extend_from_slice(&(data.bar.len() as u32).to_le_bytes());
+        ret.extend_from_slice(data.bar.as_bytes());
+
+        // Add `baz` field to the output
+        ret.extend_from_slice(&data.baz.to_le_bytes());
+
+        ret
     }
 }
 
@@ -68,20 +59,19 @@ fn main() {
         ..Default::default()
     };
 
-    let handler = FramedHandler::<Data, ParseEnum>::spawn(&config).unwrap();
+    let handler = FramedHandler::<Data, Data>::spawn(&config).unwrap();
 
     let sender = handler.get_sender();
     let receiver = handler.get_receiver();
 
-    let send_and_compare = |original_data: Data| {
-        sender.send(original_data).unwrap();
-        let data = receiver.recv().unwrap();
-        assert_eq!(original_data, data);
-        std::thread::sleep(Duration::from_millis(10));
+    let original_data = Data {
+        foo: 1337,
+        bar: "Testing, testing, is anyone there?".to_string(),
+        baz: std::f32::consts::PI,
     };
 
-    send_and_compare(Data::One);
-    send_and_compare(Data::Three);
-    send_and_compare(Data::Three);
-    send_and_compare(Data::Seven);
+    sender.send(original_data.clone_inner()).unwrap();
+    let data = receiver.recv().unwrap();
+
+    assert_eq!(original_data, data);
 }

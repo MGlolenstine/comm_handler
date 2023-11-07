@@ -28,7 +28,7 @@ impl<I: Send + Sync + 'static, T: PacketParser<I> + 'static> FramedHandler<I, T>
 
         let mut adapter = adapter_arc.boxed_clone();
         let terminate = terminate_rx.clone();
-        let packet_parser_clone = packet_parser.clone();
+        let packet_parser_clone = packet_parser.clone_inner();
         std::thread::spawn(move || loop {
             if !send_rx.is_empty() {
                 for d in send_rx.iter() {
@@ -48,7 +48,7 @@ impl<I: Send + Sync + 'static, T: PacketParser<I> + 'static> FramedHandler<I, T>
 
         let mut adapter = adapter_arc;
         let terminate = terminate_rx;
-        let packet_parser_clone = packet_parser.clone();
+        let packet_parser_clone = packet_parser.clone_inner();
         std::thread::spawn(move || loop {
             match adapter.recv() {
                 Ok(recv) => {
