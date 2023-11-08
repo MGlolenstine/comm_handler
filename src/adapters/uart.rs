@@ -7,13 +7,22 @@ use crate::traits::{CloneableCommunication, Communication, CommunicationBuilder}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UartAdapterConfiguration {
-    pub port: String,
+    port: String,
     pub baud_rate: u32,
     pub char_size: CharSize,
     pub stop_bits: StopBits,
     pub parity: Parity,
     pub flow_control: FlowControl,
     pub read_timeout: Duration,
+}
+
+impl UartAdapterConfiguration {
+    pub fn new<S: ToString>(port: S) -> Self {
+        Self {
+            port: port.to_string(),
+            ..Default::default()
+        }
+    }
 }
 
 impl Default for UartAdapterConfiguration {

@@ -54,10 +54,7 @@ impl PacketParser<Data> for Data {
 
 fn main() {
     env_logger::init();
-    let config = UartAdapterConfiguration {
-        port: "/dev/ttyUSB0".to_string(),
-        ..Default::default()
-    };
+    let config = UartAdapterConfiguration::new("/dev/ttyUSB0");
 
     let handler = FramedHandler::<Data, Data>::spawn(&config).unwrap();
 

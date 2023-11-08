@@ -5,10 +5,7 @@ use log::trace;
 
 fn main() {
     env_logger::init();
-    let config = UartAdapterConfiguration {
-        port: "/dev/ttyUSB0".to_string(),
-        ..Default::default()
-    };
+    let config = UartAdapterConfiguration::new("/dev/ttyUSB0");
 
     let handler = Handler::spawn(&config).unwrap();
 
