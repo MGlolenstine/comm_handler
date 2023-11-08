@@ -9,7 +9,7 @@ pub trait CloneableCommunication {
     fn boxed_clone(&self) -> Box<dyn Communication>;
 }
 
-pub trait Connectable: CommunicationBuilder {
+pub trait Connectable {
     /// Connect to a device
     /// Here goes the implementation of how to connect to a device
     fn connect(&mut self) -> Result<bool>;
