@@ -15,11 +15,11 @@ impl PacketParser<Vec<u8>> for Passthrough {
         Clone::clone(self)
     }
 
-    fn parse_from_bytes(&self, data: &[u8]) -> Vec<u8> {
-        data.to_vec()
+    fn parse_from_bytes(&mut self, data: &[u8]) -> Option<Vec<u8>> {
+        Some(data.to_vec())
     }
 
-    fn parse_to_bytes(&self, data: &Vec<u8>) -> Vec<u8> {
+    fn parse_to_bytes(&mut self, data: &Vec<u8>) -> Vec<u8> {
         data.to_vec()
     }
 }

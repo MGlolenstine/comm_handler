@@ -19,7 +19,7 @@ impl PacketParser<Data> for Data {
         Clone::clone(self)
     }
 
-    fn parse_from_bytes(&self, data: &[u8]) -> Data {
+    fn parse_from_bytes(&mut self, data: &[u8]) -> Option<Data> {
         // `foo` field in binary takes up 4 bytes
         let foo: u32 = u32::from_le_bytes(data[0..4].try_into().unwrap());
 
@@ -31,10 +31,10 @@ impl PacketParser<Data> for Data {
         // `baz` field in binary takes up 4 bytes
         let baz = f32::from_le_bytes(data[8 + bar_length..].try_into().unwrap());
 
-        Data { foo, bar, baz }
+        Some(Data { foo, bar, baz })
     }
 
-    fn parse_to_bytes(&self, data: &Data) -> Vec<u8> {
+    fn parse_to_bytes(&mut self, data: &Data) -> Vec<u8> {
         let mut ret = vec![];
 
         // Add `foo` field to the output

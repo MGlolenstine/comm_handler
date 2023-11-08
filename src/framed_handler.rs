@@ -28,7 +28,7 @@ impl<I: Send + Sync + 'static, T: PacketParser<I> + 'static> FramedHandler<I, T>
 
         let mut adapter = adapter_arc.boxed_clone();
         let terminate = terminate_rx.clone();
-        let packet_parser_clone = packet_parser.clone_inner();
+        let mut packet_parser_clone = packet_parser.clone_inner();
         std::thread::spawn(move || loop {
             if !send_rx.is_empty() {
                 for d in send_rx.iter() {
@@ -48,15 +48,19 @@ impl<I: Send + Sync + 'static, T: PacketParser<I> + 'static> FramedHandler<I, T>
 
         let mut adapter = adapter_arc;
         let terminate = terminate_rx;
-        let packet_parser_clone = packet_parser.clone_inner();
+        let mut packet_parser_clone = packet_parser.clone_inner();
         std::thread::spawn(move || loop {
             match adapter.recv() {
                 Ok(recv) => {
                     if let Some(data) = recv {
                         let data = packet_parser_clone.parse_from_bytes(&data);
-                        if let Err(e) = receive_tx.send(data) {
-                            error!("An error occured while sending data to the flume channel: {e}");
-                            return;
+                        if let Some(data) = data {
+                            if let Err(e) = receive_tx.send(data) {
+                                error!(
+                                    "An error occured while sending data to the flume channel: {e}"
+                                );
+                                return;
+                            }
                         }
                     } else {
                         std::thread::sleep(Duration::from_millis(10));

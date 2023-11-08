@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use log::trace;
+use log::{debug, trace};
 use serial2::{CharSize, FlowControl, IntoSettings, Parity, SerialPort, StopBits};
 
 use crate::traits::{CloneableCommunication, Communication, CommunicationBuilder};
@@ -52,9 +52,10 @@ impl IntoSettings for UartAdapterConfiguration {
 
 impl CommunicationBuilder for UartAdapterConfiguration {
     fn build(&self) -> Result<Box<dyn Communication>, std::io::Error> {
-        trace!("Connecting to SerialPort: {:#?}", self);
+        debug!("Connecting to SerialPort: {:#?}", self);
         let read_timeout = self.read_timeout;
         let mut port = SerialPort::open(self.port.clone(), self.clone())?;
+        port.discard_buffers()?;
         trace!("Successfully connected to the SerialPort");
         port.set_read_timeout(read_timeout)?;
         Ok(Box::new(UartAdapter {
@@ -71,9 +72,9 @@ pub struct UartAdapter {
 impl Communication for UartAdapter {
     fn send(&mut self, data: &[u8]) -> Result<(), std::io::Error> {
         self.error_if_not_connected()?;
-        trace!("Writing {:?} to UART.", data);
+        debug!("Writing {:?} to UART.", data);
         self.port.write_all(data)?;
-        trace!("Data written to UART.");
+        debug!("Data written to UART.");
         Ok(())
     }
 
