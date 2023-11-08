@@ -1,3 +1,4 @@
+use crate::Result;
 use std::{sync::Arc, time::Duration};
 
 use log::{debug, trace};
@@ -29,7 +30,7 @@ impl Default for UartAdapterConfiguration {
     fn default() -> Self {
         Self {
             port: String::new(),
-            baud_rate: 9600,
+            baud_rate: 115200,
             char_size: CharSize::Bits8,
             stop_bits: StopBits::One,
             parity: Parity::None,
@@ -51,7 +52,7 @@ impl IntoSettings for UartAdapterConfiguration {
 }
 
 impl CommunicationBuilder for UartAdapterConfiguration {
-    fn build(&self) -> Result<Box<dyn Communication>, std::io::Error> {
+    fn build(&self) -> Result<Box<dyn Communication>> {
         debug!("Connecting to SerialPort: {:#?}", self);
         let read_timeout = self.read_timeout;
         let mut port = SerialPort::open(self.port.clone(), self.clone())?;
@@ -70,7 +71,7 @@ pub struct UartAdapter {
 }
 
 impl Communication for UartAdapter {
-    fn send(&mut self, data: &[u8]) -> Result<(), std::io::Error> {
+    fn send(&mut self, data: &[u8]) -> Result<()> {
         self.error_if_not_connected()?;
         debug!("Writing {:?} to UART.", data);
         self.port.write_all(data)?;
@@ -78,7 +79,7 @@ impl Communication for UartAdapter {
         Ok(())
     }
 
-    fn recv(&mut self) -> Result<Option<Vec<u8>>, std::io::Error> {
+    fn recv(&mut self) -> Result<Option<Vec<u8>>> {
         self.error_if_not_connected()?;
         let mut buf = vec![];
 
@@ -110,12 +111,9 @@ impl UartAdapter {
         false
     }
 
-    fn error_if_not_connected(&self) -> Result<(), std::io::Error> {
+    fn error_if_not_connected(&self) -> Result<()> {
         if !self.connected() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Not connected",
-            ));
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, "Not connected").into());
         }
         Ok(())
     }
