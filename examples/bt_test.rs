@@ -32,7 +32,7 @@ fn main() {
 
         let data = receiver.recv().unwrap();
         trace!("User received data. {data:?}");
-        assert_eq!(data, vec![104, 105]);
+        assert_eq!(data, original_data);
         std::thread::sleep(Duration::from_millis(100));
     }
 }
