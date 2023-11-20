@@ -1,6 +1,10 @@
-use crate::{traits::Connectable, Result};
+use crate::{error::Error, traits::Connectable, Result};
 use snafu::Snafu;
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
+
 use uuid::Uuid;
 
 use log::{debug, error, trace};
@@ -10,7 +14,9 @@ use btleplug::{
     api::{Central, Characteristic, Manager as _, Peripheral as _, ScanFilter, WriteType},
     platform::{Adapter, Manager, Peripheral},
 };
+use futures::StreamExt;
 use tokio::runtime::Runtime;
+use tokio::sync::mpsc::channel;
 
 #[derive(Snafu, Debug)]
 pub enum BluetoothError {
@@ -20,6 +26,8 @@ pub enum BluetoothError {
     NoPeripheralsFound,
     #[snafu(display("Characteristic not found"))]
     CharacteristicNotFound,
+    #[snafu(display("Read timed out"))]
+    ReadTimedOut,
 
     #[snafu(display("Btleplug: {e}"))]
     Btleplug { e: btleplug::Error },
@@ -28,6 +36,12 @@ pub enum BluetoothError {
 impl From<btleplug::Error> for BluetoothError {
     fn from(value: btleplug::Error) -> Self {
         BluetoothError::Btleplug { e: value }
+    }
+}
+
+impl From<tokio::time::error::Elapsed> for BluetoothError {
+    fn from(_: tokio::time::error::Elapsed) -> Self {
+        BluetoothError::ReadTimedOut
     }
 }
 
@@ -182,12 +196,29 @@ impl CommunicationBuilder for BluetoothAdapterConfiguration {
         let write_characteristic =
             self.find_characteristic(&peripheral, &self.write_characteristic.characteristic)?;
 
+        let runtime = Runtime::new()?;
+
+        let mut notifications = runtime
+            .block_on(peripheral.notifications())
+            .map_err(BluetoothError::from)?;
+
+        let (received_data_sender, received_data_receiver) = channel::<Vec<u8>>(8);
+
+        runtime.spawn(async move {
+            while let Some(val) = notifications.next().await {
+                received_data_sender.send(val.value).await.expect("Failed to send data to the notification receiver!");
+            }
+        });
+
+        runtime.block_on(peripheral.subscribe(&read_characteristic))
+            .map_err(BluetoothError::from)?;
+
         trace!("Successfully connected to the Bluetooth");
         Ok(Box::new(BluetoothAdapter {
             peripheral: Arc::new(peripheral),
-            read_characteristic,
             write_characteristic,
-            runtime: Arc::new(Runtime::new()?),
+            notification_receiver: Arc::new(Mutex::new(received_data_receiver)),
+            runtime: Arc::new(runtime),
         }))
     }
 }
@@ -195,9 +226,9 @@ impl CommunicationBuilder for BluetoothAdapterConfiguration {
 #[derive(Clone)]
 pub struct BluetoothAdapter {
     peripheral: Arc<btleplug::platform::Peripheral>,
-    read_characteristic: Characteristic,
     write_characteristic: Characteristic,
     runtime: Arc<Runtime>,
+    notification_receiver: Arc<Mutex<tokio::sync::mpsc::Receiver<Vec<u8>>>>,
 }
 
 impl Communication for BluetoothAdapter {
@@ -217,15 +248,14 @@ impl Communication for BluetoothAdapter {
 
     fn recv(&mut self) -> Result<Option<Vec<u8>>> {
         self.error_if_not_connected()?;
-        let data = self
+        let Ok(mut receiver) = self.notification_receiver.lock() else {
+            return Err(Error::BtlePlug {
+                e: BluetoothError::ReadTimedOut,
+            });
+        };
+        Ok(self
             .runtime
-            .block_on(async { self.peripheral.read(&self.read_characteristic).await })
-            .map_err(BluetoothError::from)?;
-        if data.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(data))
-        }
+            .block_on(receiver.recv()))
     }
 }
 
