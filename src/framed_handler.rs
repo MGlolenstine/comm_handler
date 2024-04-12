@@ -5,24 +5,24 @@ use crate::Result;
 use flume::{Receiver, Sender};
 use log::error;
 
-pub struct FramedHandler<I: Send + Sync, R: PacketParser<I>, T = R> {
+pub struct FramedHandler<I: Send + Sync, R: PacketParser<I>, J = I, T = R> {
     /// Sender used to terminate the communication thread
     terminate_sender: Sender<()>,
-    /// Sender used to send data from the application
-    send_tx: Sender<I>,
     /// Receiver that receives data from the outer world
     receive_rx: Receiver<I>,
+    /// Sender used to send data from the application
+    send_tx: Sender<J>,
     /// Packet parser used for parsing incoming bytes
     packet_parser_incoming: R,
     /// Packet parser used for generating outgoing bytes
     packet_parser_outgoing: T,
 }
 
-impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static, T: PacketParser<I> + 'static>
-    FramedHandler<I, R, T>
+impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static, J: Send + Sync + 'static, T: PacketParser<J> + 'static>
+    FramedHandler<I, R, J, T>
 {
     pub fn spawn(adapter_configuration: &dyn CommunicationBuilder) -> Result<Self> {
-        let (send_tx, send_rx) = flume::unbounded::<I>();
+        let (send_tx, send_rx) = flume::unbounded::<J>();
         let (receive_tx, receive_rx) = flume::unbounded::<I>();
         let (terminate_tx, terminate_rx) = flume::unbounded();
 
@@ -108,7 +108,7 @@ impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static, T: PacketParser<I> 
     }
 
     /// Get the channel sender for sending data through the adapter.
-    pub fn get_sender(&self) -> Sender<I> {
+    pub fn get_sender(&self) -> Sender<J> {
         self.send_tx.clone()
     }
 
@@ -121,7 +121,7 @@ impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static, T: PacketParser<I> 
 // Support adding with just a single associated type.
 impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static> FramedHandler<I, R> {
     pub fn new() -> Self {
-        FramedHandler::<I, R, R>::default()
+        FramedHandler::<I, R, I, R>::default()
     }
 }
 
