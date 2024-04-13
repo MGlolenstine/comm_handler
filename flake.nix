@@ -21,6 +21,10 @@
             rust-analyzer
             pre-commit
             rustPackages.clippy
+
+            # Cargo clippy dependencies
+            pkg-config
+            dbus
           ];
           RUST_SRC_PATH = rustPlatform.rustLibSrc;
         };
