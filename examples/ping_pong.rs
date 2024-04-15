@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 /// To run this example, you will have to connect two serial adapters and connect them TX-RX.
+/// This example requires "uart" feature.
 use comm_handler::{adapters::uart::UartAdapterConfiguration, traits::PacketParser, FramedHandler};
 use log::info;
 

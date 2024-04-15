@@ -1,4 +1,5 @@
 /// To run this example, you will have to connect a serial adapter and short TX and RX pins.
+/// This example requires "uart" feature.
 use comm_handler::adapters::uart::UartAdapterConfiguration;
 use comm_handler::Handler;
 use log::trace;

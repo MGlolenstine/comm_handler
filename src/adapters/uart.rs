@@ -1,10 +1,8 @@
+use crate::traits::{CloneableCommunication, Communication, CommunicationBuilder};
 use crate::Result;
-use std::{sync::Arc, time::Duration};
-
 use log::{debug, trace};
 use serial2::{CharSize, FlowControl, IntoSettings, Parity, SerialPort, StopBits};
-
-use crate::traits::{CloneableCommunication, Communication, CommunicationBuilder};
+use std::{sync::Arc, time::Duration};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UartAdapterConfiguration {

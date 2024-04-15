@@ -13,5 +13,6 @@ serial2 = { version = "0.2.8", optional = true }
 snafu = "0.8.2"
 
 [features]
-default = ["uart"]
+default = ["uart", "tcp"]
 uart = ["dep:serial2"]
+tcp = []

@@ -18,8 +18,12 @@ pub struct FramedHandler<I: Send + Sync, R: PacketParser<I>, J = I, T = R> {
     packet_parser_outgoing: T,
 }
 
-impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static, J: Send + Sync + 'static, T: PacketParser<J> + 'static>
-    FramedHandler<I, R, J, T>
+impl<
+        I: Send + Sync + 'static,
+        R: PacketParser<I> + 'static,
+        J: Send + Sync + 'static,
+        T: PacketParser<J> + 'static,
+    > FramedHandler<I, R, J, T>
 {
     pub fn spawn(adapter_configuration: &dyn CommunicationBuilder) -> Result<Self> {
         let (send_tx, send_rx) = flume::unbounded::<J>();

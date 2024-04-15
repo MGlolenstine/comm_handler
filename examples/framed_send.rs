@@ -1,6 +1,7 @@
 #![allow(clippy::disallowed_names)]
 
 /// To run this example, you will have to connect a serial adapter and short TX and RX pins.
+/// This example requires "uart" feature.
 use comm_handler::{adapters::uart::UartAdapterConfiguration, traits::PacketParser, FramedHandler};
 
 #[derive(Debug, PartialEq, Clone, Default)]
