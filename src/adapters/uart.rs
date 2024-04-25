@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{traits::Configurable, Result};
 use std::{sync::Arc, time::Duration};
 
 use log::{debug, trace};
@@ -53,7 +53,7 @@ impl IntoSettings for UartAdapterConfiguration {
 }
 
 impl CommunicationBuilder for UartAdapterConfiguration {
-    fn build(&self) -> Result<Box<dyn Communication>> {
+    fn build(&self) -> Result<Box<UartAdapter>> {
         debug!("Connecting to SerialPort: {:#?}", self);
         let read_timeout = self.read_timeout;
         let mut port = SerialPort::open(self.port.clone(), self.clone())?;
@@ -69,7 +69,7 @@ impl CommunicationBuilder for UartAdapterConfiguration {
 
 #[derive(Clone)]
 pub struct UartAdapter {
-    port: Arc<serial2::SerialPort>,
+    pub port: Arc<serial2::SerialPort>,
     buf: Vec<u8>,
 }
 
@@ -144,7 +144,7 @@ impl UartAdapter {
 }
 
 impl CloneableCommunication for UartAdapter {
-    fn boxed_clone(&self) -> Box<dyn Communication> {
+    fn boxed_clone(&self) -> Box<UartAdapter> {
         Box::new(self.clone())
     }
 }

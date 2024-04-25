@@ -7,7 +7,7 @@ fn main() {
     env_logger::init();
     let config = UartAdapterConfiguration::new("/dev/ttyUSB0");
 
-    let handler = Handler::spawn(&config).unwrap();
+    let (handler, _adapter) = Handler::spawn(&config).unwrap();
 
     let sender = handler.get_sender();
     let receiver = handler.get_receiver();

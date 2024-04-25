@@ -1,12 +1,12 @@
-use crate::Result;
+use crate::{adapters::uart::UartAdapter, Result};
 
 pub trait CommunicationBuilder {
     /// Builds a communication out of
-    fn build(&self) -> Result<Box<dyn Communication>>;
+    fn build(&self) -> Result<Box<UartAdapter>>;
 }
 
 pub trait CloneableCommunication {
-    fn boxed_clone(&self) -> Box<dyn Communication>;
+    fn boxed_clone(&self) -> Box<UartAdapter>;
 }
 
 pub trait Connectable: CommunicationBuilder {

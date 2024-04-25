@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use crate::traits::{CommunicationBuilder, PacketParser};
+use crate::adapters::uart::{UartAdapter, UartAdapterConfiguration};
+use crate::traits::{CommunicationBuilder, PacketParser, CloneableCommunication, Communication};
 use crate::Result;
 use flume::{Receiver, Sender};
 use log::error;
@@ -18,10 +19,16 @@ pub struct FramedHandler<I: Send + Sync, R: PacketParser<I>, J = I, T = R> {
     packet_parser_outgoing: T,
 }
 
-impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static, J: Send + Sync + 'static, T: PacketParser<J> + 'static>
-    FramedHandler<I, R, J, T>
+impl<
+        I: Send + Sync + 'static,
+        R: PacketParser<I> + 'static,
+        J: Send + Sync + 'static,
+        T: PacketParser<J> + 'static,
+    > FramedHandler<I, R, J, T>
 {
-    pub fn spawn(adapter_configuration: &dyn CommunicationBuilder) -> Result<Self> {
+    pub fn spawn(
+        adapter_configuration: &UartAdapterConfiguration,
+    ) -> Result<(Self, Box<UartAdapter>)> {
         let (send_tx, send_rx) = flume::unbounded::<J>();
         let (receive_tx, receive_rx) = flume::unbounded::<I>();
         let (terminate_tx, terminate_rx) = flume::unbounded();
@@ -51,7 +58,7 @@ impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static, J: Send + Sync + 's
             }
         });
 
-        let mut adapter = adapter_arc;
+        let mut adapter = adapter_arc.boxed_clone();
         let terminate = terminate_rx;
 
         let mut packet_parser_incoming_clone = packet_parser_incoming.clone_inner();
@@ -82,13 +89,16 @@ impl<I: Send + Sync + 'static, R: PacketParser<I> + 'static, J: Send + Sync + 's
             }
         });
 
-        Ok(Self {
-            terminate_sender: terminate_tx,
-            send_tx,
-            receive_rx,
-            packet_parser_incoming,
-            packet_parser_outgoing,
-        })
+        Ok((
+            Self {
+                terminate_sender: terminate_tx,
+                send_tx,
+                receive_rx,
+                packet_parser_incoming,
+                packet_parser_outgoing,
+            },
+            adapter_arc,
+        ))
     }
 
     /// Terminate the ongoing connection

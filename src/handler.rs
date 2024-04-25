@@ -1,3 +1,4 @@
+use crate::adapters::uart::{UartAdapter, UartAdapterConfiguration};
 use crate::framed_handler::FramedHandler;
 use crate::traits::{CommunicationBuilder, PacketParser};
 use crate::Result;
@@ -34,13 +35,19 @@ pub struct Handler {
 }
 
 impl Handler {
-    pub fn spawn(adapter_configuration: &dyn CommunicationBuilder) -> Result<Self> {
-        let handler = FramedHandler::<Vec<u8>, Passthrough>::spawn(adapter_configuration)?;
-        Ok(Self {
-            send_tx: handler.get_sender(),
-            receive_rx: handler.get_receiver(),
-            handler,
-        })
+    pub fn spawn(
+        adapter_configuration: &UartAdapterConfiguration,
+    ) -> Result<(Self, Box<UartAdapter>)> {
+        let (handler, adapter) =
+            FramedHandler::<Vec<u8>, Passthrough>::spawn(adapter_configuration)?;
+        Ok((
+            Self {
+                send_tx: handler.get_sender(),
+                receive_rx: handler.get_receiver(),
+                handler,
+            },
+            adapter,
+        ))
     }
 
     /// Terminate the ongoing connection

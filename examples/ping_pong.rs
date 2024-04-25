@@ -51,7 +51,7 @@ fn spawn_client(port: &str, start: bool) {
     std::thread::spawn(move || {
         let config = UartAdapterConfiguration::new(&port);
 
-        let handler = FramedHandler::<PingPong, PingPong>::spawn(&config).unwrap();
+        let (handler, _adapter) = FramedHandler::<PingPong, PingPong>::spawn(&config).unwrap();
 
         let sender = handler.get_sender();
         let receiver = handler.get_receiver();

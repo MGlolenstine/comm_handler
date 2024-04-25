@@ -1,7 +1,7 @@
 #![allow(clippy::disallowed_names)]
 
 /// To run this example, you will have to connect a serial adapter and short TX and RX pins.
-use comm_handler::{adapters::uart::UartAdapterConfiguration, traits::PacketParser, FramedHandler};
+use comm_handler::{adapters::uart::{UartAdapter, UartAdapterConfiguration}, traits::PacketParser, FramedHandler};
 
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct Data {
@@ -56,7 +56,7 @@ fn main() {
     env_logger::init();
     let config = UartAdapterConfiguration::new("/dev/ttyUSB0");
 
-    let handler = FramedHandler::<Data, Data>::spawn(&config).unwrap();
+    let (handler, _adapter) = FramedHandler::<Data, Data>::spawn(&config).unwrap();
 
     let sender = handler.get_sender();
     let receiver = handler.get_receiver();
